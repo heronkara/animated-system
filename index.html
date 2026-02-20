@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ramazan">
+<meta name="theme-color" content="#0f172a">
+<title>Ramazan Tracker</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui,-apple-system,sans-serif;background:#0f172a;color:#f1f5f9;min-height:100vh;-webkit-tap-highlight-color:transparent}
+#app{max-width:480px;margin:0 auto;padding:16px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<script type="text/babel">
+const {useState,useEffect,useRef}=React;
+const h=React.createElement;
+
+const TABS=["Ana Sayfa","Supplement","Kilo","Antrenman"];
+const SUPPS=[
+  {id:"s1",ad:"Kreatin",doz:"5g",zaman:"Sahur"},{id:"s2",ad:"Kazein",doz:"30g",zaman:"Sahur"},
+  {id:"s3",ad:"Sitrülin Malat",doz:"6-8g",zaman:"Sahur"},{id:"s4",ad:"Glutamin",doz:"5g",zaman:"Sahur"},
+  {id:"s5",ad:"Tongkat Ali",doz:"1g",zaman:"Sahur"},{id:"i1",ad:"Glutamin",doz:"5g",zaman:"İftar"},
+  {id:"i2",ad:"Omega-3",doz:"2-3g",zaman:"İftar"},{id:"i3",ad:"D3+K2",doz:"2000IU+100mcg",zaman:"İftar"},
+  {id:"g1",ad:"Kazein",doz:"30g",zaman:"Gece"},
+];
+const PROGRAM=[
+  {gun:"PUSH — Göğüs+Omuz+Tri",etiket:"Pazar",zorunlu:true,hareketler:[
+    {ad:"Barbell Bench Press",set:"4x5-6",tip:"ana",not:"Ana güç. İlk set en ağır.",vid:"https://www.youtube.com/watch?v=rT7DgCr-3pg"},
+    {ad:"Overhead Press",set:"3x6-8",tip:"ana",not:"Core sıkı.",vid:"https://www.youtube.com/watch?v=2yjwXTZQDDI"},
+    {ad:"Incline Dambıl Press",set:"3x8-10",tip:"yard",not:"30-45° üst göğüs.",vid:"https://www.youtube.com/watch?v=8iPEnn-ltC8"},
+    {ad:"Lateral Raise",set:"4x12-15",tip:"yard",not:"Son 2 set drop set.",vid:"https://www.youtube.com/watch?v=3VcKaXpzqRo"},
+    {ad:"Cable Fly",set:"3x10-12",tip:"yard",not:"Kasılmada 1sn tut.",vid:"https://www.youtube.com/watch?v=Iwe6AmxVf7o"},
+    {ad:"Triceps Pushdown",set:"3x10-12",tip:"yard",not:"Dirsek sabit.",vid:"https://www.youtube.com/watch?v=2-LAMcpzODU"},
+    {ad:"Overhead Triceps Ext.",set:"2x12-15",tip:"yard",not:"Long head.",vid:"https://www.youtube.com/watch?v=YbX7Wd8jQ-Q"},
+  ]},
+  {gun:"PULL — Sırt+Biceps",etiket:"Salı",zorunlu:true,hareketler:[
+    {ad:"Barbell Row",set:"4x5-6",tip:"ana",not:"Sırt düz, kürek kemikleri sık.",vid:"https://www.youtube.com/watch?v=FWJR5Ve8bnQ"},
+    {ad:"Pull-up / Lat Pulldown",set:"3x6-8",tip:"ana",not:"Ağırlıklı pull-up veya pulldown.",vid:"https://www.youtube.com/watch?v=CAwf7n6Luuc"},
+    {ad:"Seated Cable Row",set:"3x8-10",tip:"yard",not:"Dar tutuş. 1sn sık.",vid:"https://www.youtube.com/watch?v=GZbfZ033f74"},
+    {ad:"Face Pull",set:"3x15-20",tip:"yard",not:"Arka omuz + rotator cuff.",vid:"https://www.youtube.com/watch?v=rep-qVOkqgk"},
+    {ad:"Dambıl Shrug",set:"3x10-12",tip:"yard",not:"Üstte 2sn tut.",vid:"https://www.youtube.com/watch?v=cJRVVxmytaM"},
+    {ad:"Barbell Curl",set:"3x8-10",tip:"yard",not:"Strict form.",vid:"https://www.youtube.com/watch?v=kwG2ipFRgFo"},
+    {ad:"Hammer Curl",set:"2x10-12",tip:"yard",not:"Brachialis.",vid:"https://www.youtube.com/watch?v=zC3nLlEvin4"},
+  ]},
+  {gun:"LEGS+CORE — Bacak+Karın",etiket:"Perşembe",zorunlu:true,hareketler:[
+    {ad:"Barbell Squat",set:"4x5-6",tip:"ana",not:"Paralel derinlik. Kemer kullan.",vid:"https://www.youtube.com/watch?v=ultWZbUMPL8"},
+    {ad:"Romanian Deadlift",set:"3x6-8",tip:"ana",not:"Hamstring+glute.",vid:"https://www.youtube.com/watch?v=7j-2w4-P14I"},
+    {ad:"Leg Press",set:"3x8-10",tip:"yard",not:"Ek hacim.",vid:"https://www.youtube.com/watch?v=IZxyjW7MPJQ"},
+    {ad:"Leg Curl",set:"3x10-12",tip:"yard",not:"Kontrollü negatif.",vid:"https://www.youtube.com/watch?v=1Tq3QdYUuHs"},
+    {ad:"Leg Extension",set:"3x10-12",tip:"yard",not:"Üstte 1sn sık.",vid:"https://www.youtube.com/watch?v=YyvSfVjQeL0"},
+    {ad:"Cable Woodchop",set:"3x12/yön",tip:"yard",not:"Love handle.",vid:"https://www.youtube.com/watch?v=pAplQXk3dkU"},
+    {ad:"Plank",set:"3x45-60sn",tip:"yard",not:"Kalça düşmesin.",vid:"https://www.youtube.com/watch?v=ASdvN_XEl_c"},
+  ]},
+  {gun:"OPSİYONEL — Zayıf Nokta",etiket:"Cumartesi",zorunlu:false,hareketler:[
+    {ad:"Seated Dambıl Press",set:"3x8-10",tip:"yard",not:"Omuz odak.",vid:"https://www.youtube.com/watch?v=qEwKCR5JCog"},
+    {ad:"Lateral Raise",set:"4x12-15",tip:"yard",not:"Hafif, kontrollü.",vid:"https://www.youtube.com/watch?v=3VcKaXpzqRo"},
+    {ad:"EZ Bar Curl",set:"3x8-10",tip:"yard",not:"Biceps odak.",vid:"https://www.youtube.com/watch?v=zG2xJ0Q5QtI"},
+    {ad:"Close Grip Bench/Dips",set:"3x8-10",tip:"yard",not:"Triceps odak.",vid:"https://www.youtube.com/watch?v=nEF0bv2FW94"},
+    {ad:"Reverse Fly",set:"3x12-15",tip:"yard",not:"Arka omuz.",vid:"https://www.youtube.com/watch?v=oLrBdSIi5TU"},
+    {ad:"Yürüyüş Bandı",set:"15-20dk",tip:"kardiyo",not:"%5-8 eğim.",vid:"https://www.youtube.com/watch?v=aTRCaON0NKw"},
+  ]},
+];
+const VAKIT=[
+  {tarih:"2026-02-19",imsak:"06:22",iftar:"18:49"},{tarih:"2026-02-20",imsak:"06:20",iftar:"18:51"},
+  {tarih:"2026-02-21",imsak:"06:19",iftar:"18:52"},{tarih:"2026-02-22",imsak:"06:18",iftar:"18:53"},
+  {tarih:"2026-02-23",imsak:"06:16",iftar:"18:54"},{tarih:"2026-02-24",imsak:"06:15",iftar:"18:55"},
+  {tarih:"2026-02-25",imsak:"06:13",iftar:"18:56"},{tarih:"2026-02-26",imsak:"06:12",iftar:"18:58"},
+  {tarih:"2026-02-27",imsak:"06:11",iftar:"18:59"},{tarih:"2026-02-28",imsak:"06:09",iftar:"19:00"},
+  {tarih:"2026-03-01",imsak:"06:08",iftar:"19:01"},{tarih:"2026-03-02",imsak:"06:06",iftar:"19:02"},
+  {tarih:"2026-03-03",imsak:"06:05",iftar:"19:03"},{tarih:"2026-03-04",imsak:"06:03",iftar:"19:05"},
+  {tarih:"2026-03-05",imsak:"06:01",iftar:"19:06"},{tarih:"2026-03-06",imsak:"06:00",iftar:"19:07"},
+  {tarih:"2026-03-07",imsak:"05:58",iftar:"19:08"},{tarih:"2026-03-08",imsak:"05:57",iftar:"19:09"},
+  {tarih:"2026-03-09",imsak:"05:55",iftar:"19:10"},{tarih:"2026-03-10",imsak:"05:53",iftar:"19:11"},
+  {tarih:"2026-03-11",imsak:"05:52",iftar:"19:12"},{tarih:"2026-03-12",imsak:"05:50",iftar:"19:14"},
+  {tarih:"2026-03-13",imsak:"05:48",iftar:"19:15"},{tarih:"2026-03-14",imsak:"05:47",iftar:"19:16"},
+  {tarih:"2026-03-15",imsak:"05:45",iftar:"19:17"},{tarih:"2026-03-16",imsak:"05:43",iftar:"19:18"},
+  {tarih:"2026-03-17",imsak:"05:41",iftar:"19:19"},{tarih:"2026-03-18",imsak:"05:40",iftar:"19:20"},
+  {tarih:"2026-03-19",imsak:"05:38",iftar:"19:21"},
+];
+const DUALAR=[
+  {gun:1,dua:"Rabbim, bu mübarek ayda bedenimi ve ruhumu arındır. 🤲",mot:"Her uzun yolculuk tek bir adımla başlar."},
+  {gun:2,dua:"Allah'ım, sabrımı ve azmimi artır. 🤲",mot:"Dün verdiğin kararın en iyi zamanı bugündü."},
+  {gun:3,dua:"Rabbim, nefsime karşı bana güç ver. 🤲",mot:"Disiplin motivasyonun bittiği yerde başlar."},
+  {gun:4,dua:"Allah'ım, vücudumu sağlıkla doldur. 🤲",mot:"Bedenin senin tapınağın — ona saygı göster."},
+  {gun:5,dua:"Rabbim, her lokmada şükrü unutturma. 🤲",mot:"Başarı alışkanlıkların toplamıdır."},
+  {gun:6,dua:"Allah'ım, zorlandığımda bana kolaylık ver. 🤲",mot:"Ağır geliyor çünkü güçleniyorsun."},
+  {gun:7,dua:"Rabbim, bu haftayı tamamladığın için şükürler olsun. 🤲",mot:"1 hafta bitti — 138'den 110'a inen adam bunu da yapar."},
+  {gun:8,dua:"Allah'ım, azmimi kırılmaz kıl. 🤲",mot:"Bugün istemiyorsan, bugün yapmalısın."},
+  {gun:9,dua:"Rabbim, bedenimi güçlendir, kalbimi yumuşat. 🤲",mot:"Acı geçicidir, gurur kalıcıdır."},
+  {gun:10,dua:"Allah'ım, bu orucun her saniyesini kabul et. 🤲",mot:"10 gün bitti. Geri dönüş yok."},
+  {gun:11,dua:"Rabbim, yorulduğumda bana huzur ver. 🤲",mot:"Vücudun aklının bırakmak istediği yerde devam edebilir."},
+  {gun:12,dua:"Allah'ım, suyun kıymetini hatırlat. 🤲",mot:"Konfor alanın dışında büyüme başlar."},
+  {gun:13,dua:"Rabbim, niyetlerimi temiz tut. 🤲",mot:"Kimse seni durduramaz, kendin hariç."},
+  {gun:14,dua:"Allah'ım, yarı yolu geçtim — sonuna kadar götür. 🤲",mot:"Yarısını geçtin. Bırakmak saçmalık olur."},
+  {gun:15,dua:"Rabbim, ibadetlerimi kabul et. 🤲",mot:"Her gün %1 daha iyi = ayda %30 dönüşüm."},
+  {gun:16,dua:"Allah'ım, sevdiklerimi koru. 🤲",mot:"Güçlü olan kalkmaya devam edendir."},
+  {gun:17,dua:"Rabbim, kalbimi kibirden arındır. 🤲",mot:"Tartı bir sayı. Sen daha fazlasısın."},
+  {gun:18,dua:"Allah'ım, şükrümü artır. 🤲",mot:"Bugün zorsa yarın kolay olacak."},
+  {gun:19,dua:"Rabbim, Kadir Gecesi'nden nasiplendir. 🤲",mot:"Son 10 gün — en güçlü bölüm."},
+  {gun:20,dua:"Allah'ım, af ve mağfiret ver. 🤲",mot:"20 gün disiplin = yeni alışkanlık."},
+  {gun:21,dua:"Rabbim, geceleri ibadetlerle süsle. 🤲",mot:"Herkes tutar, herkes dönüşmez. Sen dönüşüyorsun."},
+  {gun:22,dua:"Allah'ım, bereketini ömrüme yay. 🤲",mot:"Ayna yalan söylemez — değişimi gör."},
+  {gun:23,dua:"Rabbim, Kadir Gecesi'ni idrak ettir. 🤲",mot:"Bu gece bin aydan hayırlı."},
+  {gun:24,dua:"Allah'ım, günahlarımı bağışla. 🤲",mot:"5 gün kaldı. Bitirme gücü."},
+  {gun:25,dua:"Rabbim, gücümü artır. 🤲",mot:"Yoruldum deme. Neredeyse tamam."},
+  {gun:26,dua:"Allah'ım, oruçlarımı kabul et. 🤲",mot:"138 → 110 → Hedef. Dur durak yok."},
+  {gun:27,dua:"Rabbim, dualarımı kabul et. 🤲",mot:"Son 3 gün — bitiş çizgisi."},
+  {gun:28,dua:"Allah'ım, bayramı sağlıkla karşılat. 🤲",mot:"Yarın son gün. Başardın."},
+  {gun:29,dua:"Rabbim, bu Ramazan'ı kabul et. 🤲",mot:"29 gün. Tamamlandı. Savaşçısın. 💪"},
+];
+const tipC={ana:"#f97316",yard:"#3b82f6",kardiyo:"#22c55e"};
+const tipL={ana:"ANA",yard:"YARDIMCI",kardiyo:"KARDİYO"};
+
+function getDay(){const n=new Date(),s=n.getFullYear()+"-"+String(n.getMonth()+1).padStart(2,"0")+"-"+String(n.getDate()).padStart(2,"0");return VAKIT.findIndex(v=>v.tarih===s)}
+
+function MiniChart({data}){
+  const ref=useRef(null);
+  useEffect(()=>{
+    const cv=ref.current;if(!cv||data.length<2)return;
+    const ctx=cv.getContext("2d"),W=cv.width,H=cv.height;
+    ctx.clearRect(0,0,W,H);
+    const vals=data.map(d=>d.kg),mn=Math.min(...vals)-2,mx=Math.max(...vals)+2;
+    const xS=(W-60)/(vals.length-1),yS=(H-40)/(mx-mn);
+    ctx.strokeStyle="#334155";ctx.lineWidth=1;
+    for(let i=0;i<4;i++){const y=20+i*((H-40)/3);ctx.beginPath();ctx.moveTo(40,y);ctx.lineTo(W-10,y);ctx.stroke();
+      ctx.fillStyle="#64748b";ctx.font="10px system-ui";ctx.fillText((mx-(i*(mx-mn)/3)).toFixed(0),2,y+4)}
+    ctx.beginPath();ctx.strokeStyle="#3b82f6";ctx.lineWidth=2.5;
+    vals.forEach((v,i)=>{const x=40+i*xS,y=20+(mx-v)*yS;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)});ctx.stroke();
+    vals.forEach((v,i)=>{const x=40+i*xS,y=20+(mx-v)*yS;
+      ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);ctx.fillStyle="#3b82f6";ctx.fill()});
+    data.forEach((d,i)=>{if(i%Math.ceil(data.length/5)===0||i===data.length-1){
+      ctx.fillStyle="#64748b";ctx.font="9px system-ui";ctx.textAlign="center";ctx.fillText(d.tarih,40+i*xS,H-4)}});
+  },[data]);
+  return h("canvas",{ref,width:440,height:200,style:{width:"100%",height:"auto",borderRadius:8}});
+}
+
+function Countdown(){
+  const[now,setNow]=useState(new Date());
+  useEffect(()=>{const iv=setInterval(()=>setNow(new Date()),1000);return()=>clearInterval(iv)},[]);
+  const gi=getDay(),bugun=gi>=0?VAKIT[gi]:null;
+  if(!bugun){const f=new Date(VAKIT[0].tarih),l=new Date(VAKIT[28].tarih);
+    return h("div",{style:{background:"#1e293b",borderRadius:12,padding:14,marginBottom:16,textAlign:"center"}},
+      h("p",{style:{fontSize:14,color:"#94a3b8"}},now<f?"Ramazan henüz başlamadı 🌙":"Ramazan bitti, hayırlı bayramlar! 🎉"))}
+  const toM=t=>{const[a,b]=t.split(":").map(Number);return a*60+b};
+  const nM=now.getHours()*60+now.getMinutes(),nS=now.getHours()*3600+now.getMinutes()*60+now.getSeconds();
+  const iS=toM(bugun.imsak)*60,fS=toM(bugun.iftar)*60;
+  let lbl,ico,sec,oru;
+  if(nM<toM(bugun.imsak)){lbl="Sahura";ico="☀️";sec=iS-nS;oru=false}
+  else if(nM<toM(bugun.iftar)){lbl="İftara";ico="🌙";sec=fS-nS;oru=true}
+  else{const y=VAKIT[gi+1];if(y){lbl="Yarın Sahura";ico="☀️";sec=toM(y.imsak)*60+86400-nS}else{lbl="Bitti";ico="🎉";sec=0}oru=false}
+  if(sec<0)sec=0;
+  const hr=Math.floor(sec/3600),mn=Math.floor((sec%3600)/60),sc=sec%60,p=n=>String(n).padStart(2,"0");
+  const pct=oru?Math.min(((nS-iS)/(fS-iS))*100,100):0;
+  return h("div",{style:{background:"linear-gradient(135deg,#1e293b,#0f172a)",borderRadius:12,padding:14,marginBottom:16,border:"1px solid #334155"}},
+    h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}},
+      h("span",{style:{fontSize:13,fontWeight:700}},"🕌 İstanbul — Gün "+(gi+1)+"/29"),
+      h("span",{style:{fontSize:11,color:oru?"#22c55e":"#64748b",fontWeight:600}},oru?"● Oruçlu":"○ Oruçsuz")),
+    h("div",{style:{display:"flex",justifyContent:"space-around",marginBottom:10}},
+      h("div",{style:{textAlign:"center"}},h("div",{style:{fontSize:11,color:"#64748b"}},"İmsak"),h("div",{style:{fontSize:16,fontWeight:700,color:"#3b82f6"}},bugun.imsak)),
+      h("div",{style:{textAlign:"center"}},h("div",{style:{fontSize:11,color:"#64748b"}},"İftar"),h("div",{style:{fontSize:16,fontWeight:700,color:"#f97316"}},bugun.iftar))),
+    oru&&h("div",{style:{marginBottom:10}},
+      h("div",{style:{height:4,borderRadius:2,background:"#334155",overflow:"hidden"}},
+        h("div",{style:{height:"100%",width:pct+"%",background:"linear-gradient(90deg,#3b82f6,#f97316)",borderRadius:2}})),
+      h("div",{style:{display:"flex",justifyContent:"space-between",marginTop:3}},
+        h("span",{style:{fontSize:10,color:"#64748b"}},bugun.imsak),h("span",{style:{fontSize:10,color:"#64748b"}},"%"+Math.round(pct)),h("span",{style:{fontSize:10,color:"#64748b"}},bugun.iftar))),
+    h("div",{style:{textAlign:"center",background:"#0f172a",borderRadius:10,padding:12}},
+      h("div",{style:{fontSize:12,color:"#94a3b8",marginBottom:4}},ico+" "+lbl+" Kalan"),
+      h("div",{style:{fontSize:28,fontWeight:800,fontFamily:"monospace",letterSpacing:2}},p(hr)+":"+p(mn)+":"+p(sc))));
+}
+
+function App(){
+  const[tab,setTab]=useState(0);
+  const[sc2,setSc2]=useState({});
+  const[kl,setKl]=useState([{tarih:"8 Nis",kg:138},{tarih:"27 May",kg:128.8},{tarih:"7 Haz",kg:126.6},{tarih:"24 Haz",kg:122.9},{tarih:"4 Ağu",kg:117.2},{tarih:"21 Ağu",kg:115.5},{tarih:"2 Eki",kg:115.3},{tarih:"3 Kas",kg:115},{tarih:"30 Kas",kg:113},{tarih:"16 Şub",kg:110.4}]);
+  const[ki,setKi]=useState("");const[kt,setKt]=useState("");
+  const[ad,setAd]=useState(0);const[ac,setAc]=useState({});const[shn,setShn]=useState(null);
+  const[streak,setStreak]=useState(0);const[best,setBest]=useState(0);
+  const[wc,setWc]=useState(0);const WG=10;
+  const gi=getDay();const gIdx=gi>=0?gi:0;
+  const tS=id=>setSc2(p=>({...p,[id]:!p[id]}));
+  const tA=k=>setAc(p=>({...p,[k]:!p[k]}));
+  const addK=()=>{if(!ki||isNaN(parseFloat(ki)))return;const t=kt||new Date().toLocaleDateString("tr-TR",{day:"numeric",month:"short"});setKl(p=>[...p,{tarih:t,kg:parseFloat(ki)}]);setKi("");setKt("")};
+  const sT=SUPPS.length,sD=SUPPS.filter(s=>sc2[s.id]).length,sP=Math.round((sD/sT)*100);
+  const pr=PROGRAM[ad],aT=pr.hareketler.length,aDn=pr.hareketler.filter((_,i)=>ac[ad+"-"+i]).length;
+  const wP=Math.min((wc/WG)*100,100);
+  const grp=[{l:"☀️ Sahur",items:SUPPS.filter(s=>s.zaman==="Sahur"),cl:"#3b82f6"},{l:"🌙 İftar",items:SUPPS.filter(s=>s.zaman==="İftar"),cl:"#f472b6"},{l:"🌃 Gece",items:SUPPS.filter(s=>s.zaman==="Gece"),cl:"#22c55e"}];
+  const compDay=()=>{if(sD===sT){const n=streak+1;setStreak(n);if(n>best)setBest(n)}else setStreak(0)};
+  const S={card:{background:"#1e293b",borderRadius:12,marginBottom:12,overflow:"hidden"},
+    hdr:{padding:"10px 14px",borderBottom:"1px solid #334155",display:"flex",justifyContent:"space-between",alignItems:"center"},
+    row:d=>({display:"flex",alignItems:"center",gap:10,padding:"10px 14px",borderBottom:"1px solid #0f172a",cursor:"pointer",background:d?"rgba(34,197,94,.05)":"transparent"}),
+    chk:d=>({width:22,height:22,borderRadius:6,border:d?"none":"2px solid #334155",background:d?"#22c55e":"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,cursor:"pointer"}),
+    badge:bg=>({fontSize:10,padding:"2px 7px",borderRadius:5,background:bg||"#334155",color:"#fff",fontWeight:700}),
+    inp:{background:"#0f172a",border:"1px solid #334155",borderRadius:8,padding:"10px 12px",color:"#f1f5f9",fontSize:14,width:"100%",outline:"none",boxSizing:"border-box"},
+    btn:bg=>({background:bg,border:"none",borderRadius:8,padding:"10px 20px",color:"#fff",fontWeight:600,fontSize:14,cursor:"pointer"}),
+    stat:{background:"#0f172a",padding:10,borderRadius:10,textAlign:"center",border:"1px solid #334155"}};
+  const dua=DUALAR[gIdx]||DUALAR[0];
+
+  return h("div",null,
+    h("div",{style:{textAlign:"center",marginBottom:16}},h("h1",{style:{fontSize:20,fontWeight:700}},"💪 Ramazan Tracker"),h("p",{style:{fontSize:12,color:"#64748b",marginTop:4}},"Hedef: 110.4 kg → 100 kg")),
+    h(Countdown),
+    h("div",{style:{display:"flex",gap:3,background:"#1e293b",borderRadius:12,padding:4,marginBottom:16}},
+      TABS.map((t,i)=>h("button",{key:i,onClick:()=>setTab(i),style:{flex:1,padding:"9px 0",border:"none",borderRadius:10,cursor:"pointer",fontSize:11,fontWeight:600,background:tab===i?"#3b82f6":"transparent",color:tab===i?"#fff":"#94a3b8"}},t))),
+
+    tab===0&&h("div",null,
+      h("div",{style:{background:"linear-gradient(135deg,#1a1a2e,#16213e)",borderRadius:12,padding:14,marginBottom:12,border:"1px solid #334155"}},
+        h("div",{style:{fontSize:13,color:"#eab308",marginBottom:8,textAlign:"center"}},"✨ Günün Mesajı — Gün "+dua.gun),
+        h("div",{style:{background:"rgba(234,179,8,.08)",borderRadius:10,padding:12,marginBottom:8}},h("p",{style:{fontSize:13,lineHeight:1.6,textAlign:"center",fontStyle:"italic"}},dua.dua)),
+        h("div",{style:{background:"rgba(59,130,246,.08)",borderRadius:10,padding:12}},h("p",{style:{fontSize:12,color:"#3b82f6",lineHeight:1.5,textAlign:"center"}},"💪 "+dua.mot))),
+      h("div",{style:{...S.card,padding:14}},
+        h("div",{style:{display:"flex",alignItems:"center",gap:10,marginBottom:10}},
+          h("span",{style:{fontSize:32}},"🔥"),
+          h("div",null,h("div",{style:{fontSize:24,fontWeight:800,color:streak>0?"#f97316":"#64748b"}},streak+" Gün"),h("div",{style:{fontSize:11,color:"#64748b"}},"Üst üste tam supplement")),
+          h("div",{style:{marginLeft:"auto",textAlign:"right"}},h("div",{style:{fontSize:18,fontWeight:700,color:"#eab308"}},"🏆 "+best),h("div",{style:{fontSize:10,color:"#64748b"}},"En iyi seri"))),
+        sD===sT?h("button",{style:{...S.btn("#22c55e"),width:"100%",fontSize:13},onClick:compDay},"✅ Bugünü Tamamla (+1 Streak)"):
+        h("div",{style:{fontSize:12,color:"#64748b",textAlign:"center",padding:6}},"Streak için tüm supplementleri tamamla ("+sD+"/"+sT+")")),
+      h("div",{style:{...S.card,padding:14}},
+        h("p",{style:{fontSize:14,fontWeight:700,marginBottom:10}},"📊 Bugün"),
+        h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}},
+          h("div",{style:S.stat},h("div",{style:{fontSize:11,color:"#64748b",marginBottom:4}},"Supplement"),h("div",{style:{fontSize:20,fontWeight:800,color:sP===100?"#22c55e":"#3b82f6"}},sP+"%")),
+          h("div",{style:S.stat},h("div",{style:{fontSize:11,color:"#64748b",marginBottom:4}},"Antrenman"),h("div",{style:{fontSize:20,fontWeight:800,color:aDn===aT?"#22c55e":"#8b5cf6"}},aDn+"/"+aT)),
+          h("div",{style:S.stat},h("div",{style:{fontSize:11,color:"#64748b",marginBottom:4}},"Su"),h("div",{style:{fontSize:20,fontWeight:800,color:wc>=WG?"#22c55e":"#06b6d4"}},wc+"/"+WG)))),
+      h("div",{style:{...S.card,padding:14}},
+        h("div",{style:{display:"flex",justifyContent:"space-between",marginBottom:10}},h("p",{style:{fontSize:14,fontWeight:700}},"💧 Su Takibi"),h("span",{style:{fontSize:12,color:"#06b6d4",fontWeight:600}},wc*250+"ml / "+WG*250+"ml")),
+        h("div",{style:{height:8,borderRadius:4,background:"#334155",overflow:"hidden",marginBottom:10}},h("div",{style:{height:"100%",width:wP+"%",background:wc>=WG?"#22c55e":"#06b6d4",borderRadius:4,transition:"width .3s"}})),
+        h("div",{style:{display:"flex",gap:8,flexWrap:"wrap",justifyContent:"center"}},
+          Array.from({length:WG},(_,i)=>h("div",{key:i,onClick:()=>setWc(i+1),style:{width:36,height:36,borderRadius:8,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,background:i<wc?"#06b6d4":"#0f172a",border:"1px solid "+(i<wc?"#06b6d4":"#334155"),opacity:i<wc?1:.4}},"💧"))),
+        h("div",{style:{display:"flex",gap:8,marginTop:10,justifyContent:"center"}},
+          h("button",{style:{...S.btn("#334155"),padding:"6px 16px",fontSize:12},onClick:()=>setWc(Math.max(0,wc-1))},"− 1"),
+          h("button",{style:{...S.btn("#06b6d4"),padding:"6px 16px",fontSize:12},onClick:()=>setWc(Math.min(15,wc+1))},"+1 Bardak"),
+          h("button",{style:{...S.btn("#334155"),padding:"6px 16px",fontSize:12},onClick:()=>setWc(0)},"Sıfırla")))),
+
+    tab===1&&h("div",null,
+      h("div",{style:{...S.card,padding:12}},
+        h("div",{style:{display:"flex",alignItems:"center",marginBottom:6}},h("span",{style:{fontSize:13,color:"#94a3b8"}},"Günlük İlerleme"),h("div",{style:{flex:1}}),h("span",{style:{fontSize:13,fontWeight:700,color:sD===sT?"#22c55e":"#3b82f6"}},sD+"/"+sT)),
+        h("div",{style:{height:6,borderRadius:3,background:"#334155",overflow:"hidden"}},h("div",{style:{height:"100%",width:sP+"%",background:sD===sT?"#22c55e":"#3b82f6",borderRadius:3,transition:"width .3s"}}))),
+      grp.map((g,i)=>h("div",{key:i,style:S.card},
+        h("div",{style:S.hdr},h("span",{style:{fontSize:14,fontWeight:700,color:g.cl}},g.l),h("span",{style:{fontSize:11,color:"#64748b"}},g.items.filter(s=>sc2[s.id]).length+"/"+g.items.length)),
+        g.items.map(s=>h("div",{key:s.id,style:S.row(sc2[s.id]),onClick:()=>tS(s.id)},
+          h("div",{style:S.chk(sc2[s.id])},sc2[s.id]&&h("span",{style:{color:"#fff",fontSize:13,fontWeight:700}},"✓")),
+          h("span",{style:{flex:1,fontSize:14,fontWeight:600,color:sc2[s.id]?"#64748b":"#f1f5f9",textDecoration:sc2[s.id]?"line-through":"none"}},s.ad),
+          h("span",{style:S.badge()},s.doz)))))),
+
+    tab===2&&h("div",null,
+      h("div",{style:{...S.card,padding:14}},h("p",{style:{fontSize:14,fontWeight:700,marginBottom:10}},"📊 Kilo Grafiği"),h(MiniChart,{data:kl})),
+      h("div",{style:{...S.card,padding:14}},
+        h("p",{style:{fontSize:14,fontWeight:700,marginBottom:10}},"➕ Yeni Kilo Girişi"),
+        h("div",{style:{display:"flex",gap:8,marginBottom:8}},
+          h("input",{style:{...S.inp,flex:1},placeholder:"Tarih (ör: 20 Şub)",value:kt,onChange:e=>setKt(e.target.value)}),
+          h("input",{style:{...S.inp,flex:1},placeholder:"Kilo (kg)",type:"number",step:"0.1",value:ki,onChange:e=>setKi(e.target.value)})),
+        h("button",{style:S.btn("#3b82f6"),onClick:addK},"Kaydet")),
+      kl.length>1&&h("div",{style:{...S.card,padding:14}},
+        h("p",{style:{fontSize:14,fontWeight:700,marginBottom:8}},"📈 Özet"),
+        h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}},
+          [{l:"Başlangıç",v:kl[0].kg+" kg",c:"#f97316"},{l:"Güncel",v:kl[kl.length-1].kg+" kg",c:"#22c55e"},{l:"Verilen",v:(kl[0].kg-kl[kl.length-1].kg).toFixed(1)+" kg",c:"#3b82f6"},{l:"Hedefe Kalan",v:(kl[kl.length-1].kg-100).toFixed(1)+" kg",c:"#8b5cf6"}].map((x,i)=>
+            h("div",{key:i,style:{background:"#0f172a",padding:10,borderRadius:8,textAlign:"center"}},h("div",{style:{fontSize:11,color:"#64748b"}},x.l),h("div",{style:{fontSize:18,fontWeight:700,color:x.c}},x.v)))))),
+
+    tab===3&&h("div",null,
+      h("div",{style:{display:"flex",gap:6,marginBottom:12,overflowX:"auto",paddingBottom:4}},
+        PROGRAM.map((p,i)=>h("button",{key:i,onClick:()=>setAd(i),style:{minWidth:80,padding:"8px 10px",fontSize:11,fontWeight:600,borderRadius:8,border:"none",cursor:"pointer",background:ad===i?(p.zorunlu?"#8b5cf6":"#eab308"):"#1e293b",color:ad===i?"#fff":"#94a3b8"}},p.etiket+(p.zorunlu?"":" ⚡")))),
+      h("div",{style:S.card},
+        h("div",{style:S.hdr},h("div",null,h("span",{style:{fontSize:14,fontWeight:700,color:pr.zorunlu?"#8b5cf6":"#eab308"}},pr.gun),!pr.zorunlu&&h("div",{style:{fontSize:11,color:"#eab308",marginTop:2}},"⚡ Opsiyonel")),h("span",{style:{fontSize:12,fontWeight:600,color:aDn===aT?"#22c55e":"#64748b"}},aDn+"/"+aT)),
+        h("div",{style:{padding:"6px 14px 4px"}},h("div",{style:{height:6,borderRadius:3,background:"#334155",overflow:"hidden"}},h("div",{style:{height:"100%",width:(aDn/aT)*100+"%",background:aDn===aT?"#22c55e":"#8b5cf6",borderRadius:3,transition:"width .3s"}}))),
+        pr.hareketler.map((hr2,i)=>{const k=ad+"-"+i,dn=ac[k],no=shn===k;
+          return h("div",{key:k},
+            h("div",{style:S.row(dn)},
+              h("div",{style:S.chk(dn),onClick:()=>tA(k)},dn&&h("span",{style:{color:"#fff",fontSize:13,fontWeight:700}},"✓")),
+              h("div",{style:{flex:1,minWidth:0,cursor:"pointer"},onClick:()=>setShn(no?null:k)},
+                h("div",{style:{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}},h("span",{style:S.badge(tipC[hr2.tip])},tipL[hr2.tip]),h("span",{style:{fontSize:13,fontWeight:600,color:dn?"#64748b":"#f1f5f9",textDecoration:dn?"line-through":"none"}},hr2.ad)),
+                h("span",{style:{fontSize:11,color:"#64748b",fontFamily:"monospace"}},hr2.set)),
+              h("a",{href:hr2.vid,target:"_blank",rel:"noopener noreferrer",onClick:e=>e.stopPropagation(),style:{textDecoration:"none"}},
+                h("div",{style:{background:"#ff0000",border:"none",borderRadius:6,padding:"4px 8px",display:"flex",alignItems:"center",gap:4}},
+                  h("svg",{width:14,height:14,viewBox:"0 0 24 24",fill:"white"},h("path",{d:"M23.5 6.2c-.3-1-1-1.8-2-2.1C19.6 3.5 12 3.5 12 3.5s-7.6 0-9.5.6c-1 .3-1.7 1.1-2 2.1C0 8.1 0 12 0 12s0 3.9.5 5.8c.3 1 1 1.8 2 2.1 1.9.6 9.5.6 9.5.6s7.6 0 9.5-.6c1-.3 1.7-1.1 2-2.1.5-1.9.5-5.8.5-5.8s0-3.9-.5-5.8zM9.5 15.5V8.5l6.5 3.5-6.5 3.5z"})),
+                  h("span",{style:{color:"#fff",fontSize:10,fontWeight:700}},"Video")))),
+            no&&h("div",{style:{padding:"4px 14px 10px 48px",fontSize:12,color:"#3b82f6",background:"rgba(59,130,246,.05)"}},"💡 "+hr2.not))})),
+      h("div",{style:{...S.card,padding:12}},h("p",{style:{fontSize:13,fontWeight:700,marginBottom:6}},"⏱️ Kurallar"),h("p",{style:{fontSize:12,color:"#64748b",lineHeight:1.7}},"Max 45-50dk | Sahurdan ~1.5 saat sonra | Ağırlıkları koru")),
+      !pr.zorunlu&&h("div",{style:{...S.card,padding:12,borderLeft:"3px solid #eab308"}},h("p",{style:{fontSize:13,fontWeight:700,color:"#eab308",marginBottom:6}},"⚡ Opsiyonel Gün"),h("p",{style:{fontSize:12,color:"#64748b",lineHeight:1.7}},"Enerji 6/10 üstü → Git | Düşük → Dinlen"))),
+
+    h("div",{style:{textAlign:"center",padding:"20px 0 8px",opacity:.3}},h("p",{style:{fontSize:10,color:"#ef4444",fontStyle:"italic"}},"harun ekini çok seviyor ❤️")));
+}
+
+ReactDOM.createRoot(document.getElementById("app")).render(h(App));
+</script>
+</body>
+</html>
